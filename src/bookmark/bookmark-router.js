@@ -36,12 +36,6 @@ bookmarkRouter
                 .status(400)
                 .send('Invalid data')
         }
-        // if (!isWebUri(websiteurl)){
-        //     logger.error(`Invalid url`)
-        //     return res
-        //         .status(400)
-        //         .send('Invalid data')
-        // }
 
         const newBookmark = {
             title,
@@ -78,26 +72,31 @@ bookmarkRouter
             req.app.get('db'),
             req.params.id
         )
-        .then(bookmark => {
-            if (!bookmark) {
-                return res.status(404).json({
-                    error: { message: `Bookmark doesn't exist` }
-                })
-            }
-            res.bookmark = bookmark
-            next()
-        })
-        .catch(next)
+            .then(bookmark => {
+                if (!bookmark) {
+                    return res.status(404).json({
+                        error: { message: `Bookmark doesn't exist` }
+                    })
+                }
+                res.bookmark = bookmark
+                next()
+            })
+            .catch(next)
     })
     .get((req, res, next) => {
-        res.json(formatBookmark(bookmark))
+        res.json(formatBookmark(res.bookmark))
     })
 
     .delete((req, res, next) => {
         const { id } = req.params
         const knexInstance = req.app.get('db')
         BookmarksService.deleteBookmark(knexInstance, id)
-            .then(() => {
+            .then(bookmark => {
+                if (!bookmark) {
+                    return res.status(404).json({
+                        error: { message: `Bookmark doesn't exist` }
+                    })
+                }
                 res.status(204).end()
             })
             .catch(next)
