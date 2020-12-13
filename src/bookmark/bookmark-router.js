@@ -1,3 +1,4 @@
+const path = require('path')
 const express = require('express')
 const xss = require('xss')
 const { isWebUri } = require('valid-url')
@@ -59,7 +60,7 @@ bookmarkRouter
             .then(bookmark => {
                 res
                     .status(201)
-                    .location(`/bookmarks/${bookmark.id}`)
+                    .location(path.posix.join(req.originalUrl, `/${bookmark.id}`))
                     .json(formatBookmark(bookmark))
             })
             .catch(next)
@@ -97,6 +98,27 @@ bookmarkRouter
                         error: { message: `Bookmark doesn't exist` }
                     })
                 }
+                res.status(204).end()
+            })
+            .catch(next)
+    })
+    .patch(jsonParser, (req, res, next) => {
+        const { title, websiteurl, rating, descr } = req.body
+        const bookmarkToUpdate = { title, websiteurl, rating, descr }
+        const numberOfValues = Object.values(bookmarkToUpdate).filter(Boolean).length
+        if (numberOfValues === 0) {
+            return res.status(400).json({
+                error: {
+                    message: `Request body must contain either 'title', 'websiteurl', 'rating', or 'descr'`
+                }
+            })
+        }
+        BookmarksService.updateBookmark(
+            req.app.get('db'),
+            req.params.id,
+            bookmarkToUpdate
+        )
+            .then(numRowsAffected => {
                 res.status(204).end()
             })
             .catch(next)
